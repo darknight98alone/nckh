@@ -52,26 +52,17 @@ class detectTable(object):
         cv2.imwrite('v_dilate_img.jpg',v_dilate_img)
         mask_img = h_dilate_img+v_dilate_img
         joints_img = cv2.bitwise_and(h_dilate_img,v_dilate_img)
-        # plt.imsave("h_dilate.jpg",h_dilate_img)
-        # plt.imsave('v_dilate.jpg',v_dilate_img)
         cv2.imwrite("mask.jpg",mask_img)
         cv2.imwrite("joints.jpg",joints_img)
-        #plt.imsave("joints.jpg",joints_img)
         boxes = []
         h_dilate_img_autofill = self.autofillimg_horizon(h_dilate_img,v_dilate_img)
-        # cv2.imwrite("h_dilate_autofill.jpg",h_dilate_img_autofill)
         mask_img_temp = h_dilate_img_autofill+v_dilate_img
-        # plt.imsave('mask_h_autofill.jpg',mask_img_temp)
         v_dilate_img_autofill = self.autofillimg_vertical(h_dilate_img,v_dilate_img)
-        # cv2.imwrite('v_dilate_autofill.jpg',v_dilate_img_autofill)
         h_dilate_img_autofill = self.remove_single_horizon(h_dilate_img_autofill,v_dilate_img_autofill)
         v_dilate_img_autofill = self.autofillimg_vertical_2nd(h_dilate_img_autofill,v_dilate_img_autofill)
         mask_img_autofill = h_dilate_img_autofill+v_dilate_img_autofill
-        # plt.imsave("mask_autofill.jpg",mask_img_autofill)
         cv2.imwrite("mask_autofill.jpg",mask_img_autofill)
-        # plt.imsave('joints_img_autofill.jpg',joints_img_autofill)
         joints_img_autofill = cv2.bitwise_and(h_dilate_img_autofill,v_dilate_img_autofill)
-        # plt.imsave('joints_img_autofill.jpg',joints_img_autofill)
         cv2.imwrite('joints_img_autofill.jpg',joints_img_autofill)
         return mask_img,joints_img,mask_img_autofill,joints_img_autofill
     def autofillimg_horizon(self,_h_dilate_img,_v_dilate_img):
