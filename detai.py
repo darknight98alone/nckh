@@ -267,8 +267,9 @@ def appendListBigBox(listBigBox,img,listResult):
     return result,listBigBox
 
 def process_par(image,output,listBigBox,listResult):
-    listBigBox.sort(key=lambda x: x[1])
-    print(listBigBox[0][1])
+    if len(listBigBox)>0:
+        listBigBox.sort(key=lambda x: x[1])
+        print(listBigBox[0][1])
     results = []	
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _,thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
@@ -296,24 +297,37 @@ def writeToTxt(result):
     for rs in result:
         f.write(rs+"\n")        
     f.close()
+
+def readImageFileInFolder(path):
+    listName = []
+    for r, d, f in os.walk(path):
+        for file in f:
+            # if '.png' in file:
+            listName.append(os.path.join(r, file))
+        # listName = sorted(listName)
+        # for name in listName:
+        #     image = cv2.imread(name,0)
+        #     image = cv2.resize(image,(40,40))
+        #     # image_list.append(image)
+    return listName
     
 if __name__=='__main__':
-    # imageName,maskName = getInput()
-    imageName = "2.jpg"
-    img = cv2.imread(imageName)
-    img = imutils.resize(img,height=2000)
-    # mask,joint,mask_img,joint_img = detectTable(img).run()
-    maskName = "mask.jpg"
-    mask_img = cv2.imread(maskName)
-    listResult,listBigBox = getTableCoordinate(mask_img)
-    img= cv2.resize(img,(mask_img.shape[1],mask_img.shape[0]))
-    origin = img.copy()
-    for pt in listBigBox:
-        (x,y,w,h) = pt
-        img[y:(y+h-1),x:(x+w-1)] = 255
-    
-    out,result = process_par(img,origin,listBigBox,listResult)
-    printImage(out)
-    for rs in result:
-        print(rs + "\n")
-    writeToTxt(result)
+    path,maskName = getInput()
+    for imageName in readImageFileInFolder(path):
+        # imageName = "d.jpg"
+        img = cv2.imread(imageName)
+        img = imutils.resize(img,height=2000)
+        mask,joint,mask_img,joint_img = detectTable(img).run()
+        # maskName = "mask.jpg"
+        mask_img = cv2.imread(maskName)
+        listResult,listBigBox = getTableCoordinate(mask_img)
+        img= cv2.resize(img,(mask_img.shape[1],mask_img.shape[0]))
+        origin = img.copy()
+        for pt in listBigBox:
+            (x,y,w,h) = pt
+            img[y:(y+h-1),x:(x+w-1)] = 255
+        out,result = process_par(img,origin,listBigBox,listResult)
+        printImage(out)
+        for rs in result:
+            print(rs + "\n")
+        writeToTxt(result)
