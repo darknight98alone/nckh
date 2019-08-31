@@ -13,8 +13,11 @@ from imutils import contours
 import pytesseract
 import skew
 import PdfToImages
-import TxtToDocx
 from os import path
+from docx import Document
+from pdf2image import convert_from_path
+from PyPDF2 import PdfFileReader
+
 class detectTable(object):
     def __init__(self, src_img):
         self.src_img = src_img
@@ -52,18 +55,27 @@ class detectTable(object):
         cv2.imwrite('v_dilate_img.jpg',v_dilate_img)
         mask_img = h_dilate_img+v_dilate_img
         joints_img = cv2.bitwise_and(h_dilate_img,v_dilate_img)
+        # plt.imsave("h_dilate.jpg",h_dilate_img)
+        # plt.imsave('v_dilate.jpg',v_dilate_img)
         cv2.imwrite("mask.jpg",mask_img)
-        cv2.imwrite("joints.jpg",joints_img)
+        # cv2.imwrite("joints.jpg",joints_img)
+        #plt.imsave("joints.jpg",joints_img)
         boxes = []
         h_dilate_img_autofill = self.autofillimg_horizon(h_dilate_img,v_dilate_img)
+        # cv2.imwrite("h_dilate_autofill.jpg",h_dilate_img_autofill)
         mask_img_temp = h_dilate_img_autofill+v_dilate_img
+        # plt.imsave('mask_h_autofill.jpg',mask_img_temp)
         v_dilate_img_autofill = self.autofillimg_vertical(h_dilate_img,v_dilate_img)
+        # cv2.imwrite('v_dilate_autofill.jpg',v_dilate_img_autofill)
         h_dilate_img_autofill = self.remove_single_horizon(h_dilate_img_autofill,v_dilate_img_autofill)
         v_dilate_img_autofill = self.autofillimg_vertical_2nd(h_dilate_img_autofill,v_dilate_img_autofill)
         mask_img_autofill = h_dilate_img_autofill+v_dilate_img_autofill
-        cv2.imwrite("mask_autofill.jpg",mask_img_autofill)
+        # plt.imsave("mask_autofill.jpg",mask_img_autofill)
+        # cv2.imwrite("mask_autofill.jpg",mask_img_autofill)
+        # plt.imsave('joints_img_autofill.jpg',joints_img_autofill)
         joints_img_autofill = cv2.bitwise_and(h_dilate_img_autofill,v_dilate_img_autofill)
-        cv2.imwrite('joints_img_autofill.jpg',joints_img_autofill)
+        # plt.imsave('joints_img_autofill.jpg',joints_img_autofill)
+        # cv2.imwrite('joints_img_autofill.jpg',joints_img_autofill)
         return mask_img,joints_img,mask_img_autofill,joints_img_autofill
     def autofillimg_horizon(self,_h_dilate_img,_v_dilate_img):
         height,width = _h_dilate_img.shape
@@ -208,9 +220,10 @@ def printImage(image):
 def getInput():
     ap = argparse.ArgumentParser()
     ap.add_argument("-i","--image",required = True, help = "path to image") # -i để cho viết tắt trước khi truyền tham số còn không thì
-    ap.add_argument("-m","--mask",required = True, help = "path to image")
+    ap.add_argument("-o","--outPath",required = True, help = "output path")
+    ap.add_argument("-n","--outName",required = True, help = "name of docx")
     args = vars(ap.parse_args()) 
-    return args["image"],args["mask"]
+    return args["image"],args["outPath"],args["outName"]
 
 def getTableCoordinate(image):
     image = cv2.cvtColor(image,cv2.COLOR_RGB2GRAY)
@@ -224,23 +237,26 @@ def getTableCoordinate(image):
         (conts,_)= cv2.findContours(canImage.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
     elif imutils.is_cv3():
         (_,conts,_)= cv2.findContours(canImage.copy(),cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
-    conts = contours.sort_contours(conts)[0]
     listBigBoxPoint = []
     listBigBox = []
     listPoint = []
     listResult = []
-    for i in range (len(conts)):
-        (x, y, w, h) = cv2.boundingRect(conts[i])
-        if w>10 and h>10 and w < 0.7*w1:
-            if (x,y) not in listPoint:
-                for j in range(3):
-                    listPoint.append((x+j,y+j))
-                listResult.append((x,y,w,h))
-                cv2.rectangle(newimage,(x,y),(x+w,y+h),255,1)
-        if w>10 and h>10 and w>0.7*w1:
-            if (x,y) not in listBigBoxPoint:
-                listBigBox.append((x,y,w,h))
-                listBigBoxPoint.append((x,y))
+    if len(conts)>0:
+        conts = contours.sort_contours(conts)[0]
+        # conts = sorted(conts, key=lambda ctr: cv2.boundingRect(ctr)[0] + cv2.boundingRect(ctr)[1] * image.shape[1] )
+        for i in range (len(conts)):
+            (x, y, w, h) = cv2.boundingRect(conts[i])
+            if w>10 and h>10 and w < 0.7*w1:
+                if (x,y) not in listPoint:
+                    for j in range(-5,5,1):
+                        listPoint.append((x+j,y+j))
+                    listResult.append((x,y,w,h))
+                    cv2.rectangle(newimage,(x,y),(x+w,y+h),255,1)
+                    printImage(newimage)
+            if w>10 and h>10 and w>0.7*w1:
+                if (x,y) not in listBigBoxPoint:
+                    listBigBox.append((x,y,w,h))
+                    listBigBoxPoint.append((x,y))
     ## phuong phap xu li tam thoi
     return listResult,listBigBox
 
@@ -257,10 +273,12 @@ def appendListBigBox(listBigBox,img,listResult):
             if y>listBigBox[0][1]:
                 break
         tempImage = img[y:(y+h-1),x:(x+w-1)]
-        tempImage = imutils.resize(tempImage,height=90)
+        (h,w,d) = tempImage.shape
+        tempImage = imutils.resize(tempImage,height=h*2)
+        # printImage(tempImage)
         cv2.imwrite("temp.jpg",tempImage)
         result.append(pytesseract.image_to_string(Image.open('temp.jpg'), lang='vie'))
-    
+        print(result[len(result)-1])
     return result,listBigBox
 
 def process_par(image,output,listBigBox,listResult):
@@ -277,70 +295,90 @@ def process_par(image,output,listBigBox,listResult):
         (contours, hierarchy) = cv2.findContours(par_img.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     elif imutils.is_cv3():
         (_,contours, hierarchy) = cv2.findContours(par_img.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-    sorted_contours = sorted(contours, key=lambda ctr: cv2.boundingRect(ctr)[0] + cv2.boundingRect(ctr)[1] * image.shape[1] )
-    for i,cnt in enumerate(sorted_contours):
-        x,y,w,h = cv2.boundingRect(cnt)
-        cv2.rectangle(output,(x,y),(x+w,y+h),(0,255,0),1)
-        crop = output[y:y+h, x:x+w]
-        if len(listBigBox)>0:
-            if y > listBigBox[0][1]:
-                string,listBigBox = appendListBigBox(listBigBox,output,listResult)
-                for st in string:
-                    results.append(st)
-        cv2.imwrite("temp.jpg",crop)
-        results.append(pytesseract.image_to_string(Image.open('temp.jpg'), lang='vie'))
+    if len(contours)>0:
+        sorted_contours = sorted(contours, key=lambda ctr: cv2.boundingRect(ctr)[0] + cv2.boundingRect(ctr)[1] * image.shape[1] )
+        for i,cnt in enumerate(sorted_contours):
+            x,y,w,h = cv2.boundingRect(cnt)
+            cv2.rectangle(output,(x,y),(x+w,y+h),(0,255,0),1)
+            crop = output[y:y+h, x:x+w]
+            if len(listBigBox)>0:
+                if y > listBigBox[0][1]:
+                    string,listBigBox = appendListBigBox(listBigBox,output,listResult)
+                    for st in string:
+                        results.append(st)
+            cv2.imwrite("temp.jpg",crop)
+            results.append(pytesseract.image_to_string(Image.open('temp.jpg'), lang='vie'))
     return output,results
 
 
-def writeToTxt(result,filePath):
-    
-    f = open(filePath + "/result.txt","a")
-    for rs in result:
-        f.write(rs+"\n")        
-    f.close()
-    TxtToDocx.txtToDocx(filePath+"/result.txt")
+def writeToTxt(result,filePath,docName):
+    if os.path.exists(outputPath +"/"+docName) == False:
+        dc = Document()
+        dc.save('output.docx')
+    document = Document(outputPath +"/"+docName)
+    for line in result:
+        para = document.add_paragraph(line)
+        paragraph_format = para.paragraph_format
+        paragraph_format.space_before = 0
+        paragraph_format.space_after = 0
+        paragraph_format.line_spacing = 1        
+    document.save(outputPath +"/"+docName)
 
-def readImageFileInFolder(inputPath):
+
+def readImageFileInFolder(inputPath,outputPath,outputName):
     listName = []
     for r, d, f in os.walk(inputPath):
         for file in f:
             # if '.png' in file:
             print(r)
             print(file)
-            if '.pdf' in file:
-                PdfToImages.pdfToImage(r+"/"+file,r+"/")
+            if str(file).lower().endswith(".pdf"):
+                pdf = PdfFileReader(open(inputPath+"/"+file,'rb'))
+                maxPages = pdf.getNumPages()
+                for page in range(1,maxPages,10) : 
+                    images_from_path = convert_from_path(inputPath +"/"+ file, dpi=200, first_page=page, last_page = min(page+10-1,maxPages))
+                    for image in images_from_path:
+                        image.save('temp.jpg',)
+                        img = cv2.imread("temp.jpg")
+                        # printImage(img)
+                        handleFileToDocx(img,outputPath,outputName)
             if str(file).lower().endswith(('.png', '.jpg', '.jpeg')):
                 listName.append(os.path.join(r, file))
     return listName
+
+def handleFileToDocx(img,outputPath,outputName):
+    img = skew.skewImage(img)
+    mask,joint,mask_img,joint_img = detectTable(img).run()
+    maskName = "mask.jpg"
+    mask_img = cv2.imread(maskName)
+    (h,w,d) = mask_img.shape
+    mask_img = imutils.resize(mask_img,width=w*2,height=h*2)
+    # printImage(mask_img)
+    listResult,listBigBox = getTableCoordinate(mask_img)
+    img= cv2.resize(img,(mask_img.shape[1],mask_img.shape[0]))
+    origin = img.copy()
+    for pt in listBigBox:
+        (x,y,w,h) = pt
+        img[y:(y+h-1),x:(x+w-1)] = 255
+    out,result = process_par(img,origin,listBigBox,listResult)
+    # printImage(out)
+    for rs in result:
+        print(rs + "\n")
+    writeToTxt(result,outputPath,outputName)
     
-
-
-if __name__=='__main__':
-    inputPath,outputPath = getInput()
+def folderFileToDocx(inputPath,outputPath,outputName):
     if path.exists(inputPath) and path.exists(outputPath):
-        if path.exists(outputPath+"/result.txt"):
-            os.remove(outputPath + "/result.txt")
-        for imageName in readImageFileInFolder(inputPath):
+        if path.exists(outputPath+"/"+outputName):
+            os.remove(outputPath + "/"+outputName)
+        for imageName in readImageFileInFolder(inputPath,outputPath,outputName):
             # imageName = "d.jpg"
             img = cv2.imread(imageName)
-            # img = skew.skewImage(img)
-            
-            mask,joint,mask_img,joint_img = detectTable(img).run()
-            maskName = "mask.jpg"
-            mask_img = cv2.imread(maskName)
-            (h,w,d) = mask_img.shape
-            mask_img = imutils.resize(mask_img,width=w*2,height=h*2)
-            printImage(mask_img)
-            listResult,listBigBox = getTableCoordinate(mask_img)
-            img= cv2.resize(img,(mask_img.shape[1],mask_img.shape[0]))
-            origin = img.copy()
-            for pt in listBigBox:
-                (x,y,w,h) = pt
-                img[y:(y+h-1),x:(x+w-1)] = 255
-            out,result = process_par(img,origin,listBigBox,listResult)
-            printImage(out)
-            for rs in result:
-                print(rs + "\n")
-            writeToTxt(result,outputPath)
+            handleFileToDocx(img,outputPath,outputName)
     else:
         print("sai duong dan")
+if __name__=='__main__':
+    inputPath,outputPath,outputName = getInput()
+    # inputPath = "/home/phamvandan/Documents/research/data/nckh/22"
+    # outputPath = "/home/phamvandan/Documents/research/code/learn"
+    # outputName = "output.docx"
+    folderFileToDocx(inputPath,outputPath,outputName)
