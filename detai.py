@@ -12,7 +12,6 @@ import imutils
 from imutils import contours
 import pytesseract
 import skew
-import PdfToImages
 from os import path
 from docx import Document
 from pdf2image import convert_from_path
@@ -27,7 +26,7 @@ class detectTable(object):
             gray_img = self.src_img
         elif len(self.src_img.shape) ==3:
             gray_img = cv2.cvtColor(self.src_img, cv2.COLOR_BGR2GRAY)
-        print(gray_img.shape)
+        #print(gray_img.shape)
 
         scale_percent = 50 # percent of original size
         width = int(gray_img.shape[1] * scale_percent / 100)
@@ -221,9 +220,9 @@ def getInput():
     ap = argparse.ArgumentParser()
     ap.add_argument("-i","--image",required = True, help = "path to image") # -i để cho viết tắt trước khi truyền tham số còn không thì
     ap.add_argument("-o","--outPath",required = True, help = "output path")
-    ap.add_argument("-n","--outName",required = True, help = "name of docx")
+    # ap.add_argument("-n","--outName",required = True, help = "name of docx")
     args = vars(ap.parse_args()) 
-    return args["image"],args["outPath"],args["outName"]
+    return args["image"],args["outPath"]
 
 def getTableCoordinate(image):
     image = cv2.cvtColor(image,cv2.COLOR_RGB2GRAY)
@@ -252,7 +251,7 @@ def getTableCoordinate(image):
                         listPoint.append((x+j,y+j))
                     listResult.append((x,y,w,h))
                     cv2.rectangle(newimage,(x,y),(x+w,y+h),255,1)
-                    printImage(newimage)
+                    #printImagenewimage)
             if w>10 and h>10 and w>0.7*w1:
                 if (x,y) not in listBigBoxPoint:
                     listBigBox.append((x,y,w,h))
@@ -275,16 +274,16 @@ def appendListBigBox(listBigBox,img,listResult):
         tempImage = img[y:(y+h-1),x:(x+w-1)]
         (h,w,d) = tempImage.shape
         tempImage = imutils.resize(tempImage,height=h*2)
-        # printImage(tempImage)
+        # #printImagetempImage)
         cv2.imwrite("temp.jpg",tempImage)
         result.append(pytesseract.image_to_string(Image.open('temp.jpg'), lang='vie'))
-        print(result[len(result)-1])
+        #print(result[len(result)-1])
     return result,listBigBox
 
 def process_par(image,output,listBigBox,listResult):
     if len(listBigBox)>0:
         listBigBox.sort(key=lambda x: x[1])
-        print(listBigBox[0][1])
+        #print(listBigBox[0][1])
     results = []	
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _,thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
@@ -311,49 +310,59 @@ def process_par(image,output,listBigBox,listResult):
     return output,results
 
 
-def writeToTxt(result,filePath,docName):
-    if os.path.exists(outputPath +"/"+docName) == False:
+def writeToTxt(result,docName):
+    if os.path.exists(docName)==False:
         dc = Document()
-        dc.save('output.docx')
-    document = Document(outputPath +"/"+docName)
+        dc.save(docName)
+    else:
+        i =1
+        while (True) :
+            if os.path.exists(docName[:len(docName)-5]+str(i)+".docx")==False:
+                docName = docName[:len(docName)-5]+str(i)+".docx"
+                dc = Document()
+                dc.save(docName)
+                break
+            i = i + 1
+    document = Document(docName)
     for line in result:
         para = document.add_paragraph(line)
         paragraph_format = para.paragraph_format
         paragraph_format.space_before = 0
         paragraph_format.space_after = 0
         paragraph_format.line_spacing = 1        
-    document.save(outputPath +"/"+docName)
+    document.save(docName)
 
 
-def readImageFileInFolder(inputPath,outputPath,outputName):
-    listName = []
-    for r, d, f in os.walk(inputPath):
-        for file in f:
-            # if '.png' in file:
-            print(r)
-            print(file)
-            if str(file).lower().endswith(".pdf"):
-                pdf = PdfFileReader(open(inputPath+"/"+file,'rb'))
-                maxPages = pdf.getNumPages()
-                for page in range(1,maxPages,10) : 
-                    images_from_path = convert_from_path(inputPath +"/"+ file, dpi=200, first_page=page, last_page = min(page+10-1,maxPages))
-                    for image in images_from_path:
-                        image.save('temp.jpg',)
-                        img = cv2.imread("temp.jpg")
-                        # printImage(img)
-                        handleFileToDocx(img,outputPath,outputName)
-            if str(file).lower().endswith(('.png', '.jpg', '.jpeg')):
-                listName.append(os.path.join(r, file))
-    return listName
+# def readImageFileInFolder(inputPath,outputPath,outputName):
+#     listName = []
+#     for r, d, f in os.walk(inputPath):
+#         for file in f:
+#             # if '.png' in file:
+#             #print(r)
+#             #print(file)
+#             if str(file).lower().endswith(".pdf"):
+#                 pdf = PdfFileReader(open(inputPath+"/"+file,'rb'))
+#                 maxPages = pdf.getNumPages()
+#                 for page in range(1,maxPages,10) : 
+#                     images_from_path = convert_from_path(inputPath +"/"+ file, dpi=200, first_page=page, last_page = min(page+10-1,maxPages))
+#                     for image in images_from_path:
+#                         image.save('temp.jpg',)
+#                         img = cv2.imread("temp.jpg")
+#                         # #printImageimg)
+#                         handleFileToDocx(img,outputPath,outputName)
+#             if str(file).lower().endswith(('.png', '.jpg', '.jpeg')):
+#                 listName.append(os.path.join(r, file))
+#     return listName
 
-def handleFileToDocx(img,outputPath,outputName):
+def handleFileToDocx(fileName,outputName):
+    img = cv2.imread(fileName)
     img = skew.skewImage(img)
     mask,joint,mask_img,joint_img = detectTable(img).run()
     maskName = "mask.jpg"
     mask_img = cv2.imread(maskName)
     (h,w,d) = mask_img.shape
     mask_img = imutils.resize(mask_img,width=w*2,height=h*2)
-    # printImage(mask_img)
+    # #printImagemask_img)
     listResult,listBigBox = getTableCoordinate(mask_img)
     img= cv2.resize(img,(mask_img.shape[1],mask_img.shape[0]))
     origin = img.copy()
@@ -361,24 +370,39 @@ def handleFileToDocx(img,outputPath,outputName):
         (x,y,w,h) = pt
         img[y:(y+h-1),x:(x+w-1)] = 255
     out,result = process_par(img,origin,listBigBox,listResult)
-    # printImage(out)
-    for rs in result:
-        print(rs + "\n")
-    writeToTxt(result,outputPath,outputName)
+    # #printImageout)
+    # for rs in result:
+    #     #print(rs + "\n")
+    writeToTxt(result,outputName)   
     
-def folderFileToDocx(inputPath,outputPath,outputName):
-    if path.exists(inputPath) and path.exists(outputPath):
-        if path.exists(outputPath+"/"+outputName):
-            os.remove(outputPath + "/"+outputName)
-        for imageName in readImageFileInFolder(inputPath,outputPath,outputName):
-            # imageName = "d.jpg"
-            img = cv2.imread(imageName)
-            handleFileToDocx(img,outputPath,outputName)
-    else:
-        print("sai duong dan")
+# def folderFileToDocx(inputPath,outputPath,outputName):
+#     if path.exists(inputPath) and path.exists(outputPath):
+#         if path.exists(outputPath+"/"+outputName):
+#             os.remove(outputPath + "/"+outputName)
+#         for imageName in readImageFileInFolder(inputPath,outputPath,outputName):
+#             # imageName = "d.jpg"
+#             img = cv2.imread(imageName)
+#             handleFileToDocx(img,outputName)
+#     else:
+#         #print("sai duong dan")
+
+def FileToDocx(inputFile,outputName):
+    if inputFile.lower().endswith(".pdf"):
+        pdf = PdfFileReader(open(inputFile,'rb'))
+        maxPages = pdf.getNumPages()
+        for page in range(1,maxPages,10) : 
+            images_from_path = convert_from_path(inputFile, dpi=200, first_page=page, last_page = min(page+10-1,maxPages))
+            for image in images_from_path:
+                image.save('temp.jpg',)
+                img = cv2.imread("temp.jpg")
+                # #printImageimg)
+                handleFileToDocx(inputFile,outputName)
+    elif str(inputFile).lower().endswith(('.png', '.jpg', '.jpeg')):
+        handleFileToDocx(inputFile,outputName)
+
+
 if __name__=='__main__':
-    inputPath,outputPath,outputName = getInput()
-    # inputPath = "/home/phamvandan/Documents/research/data/nckh/22"
-    # outputPath = "/home/phamvandan/Documents/research/code/learn"
-    # outputName = "output.docx"
-    folderFileToDocx(inputPath,outputPath,outputName)
+    # inputFile,outputName= getInput()
+    inputFile = "./image/2.jpg"
+    outputName = "newdoc.docx"
+    FileToDocx(inputFile,outputName)
