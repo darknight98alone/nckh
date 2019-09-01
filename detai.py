@@ -314,15 +314,15 @@ def writeToTxt(result,docName):
     if os.path.exists(docName)==False:
         dc = Document()
         dc.save(docName)
-    else:
-        i =1
-        while (True) :
-            if os.path.exists(docName[:len(docName)-5]+str(i)+".docx")==False:
-                docName = docName[:len(docName)-5]+str(i)+".docx"
-                dc = Document()
-                dc.save(docName)
-                break
-            i = i + 1
+    # else:
+    #     i =1
+    #     while (True) :
+    #         if os.path.exists(docName[:len(docName)-5]+str(i)+".docx")==False:
+    #             docName = docName[:len(docName)-5]+str(i)+".docx"
+    #             dc = Document()
+    #             dc.save(docName)
+    #             break
+    #         i = i + 1
     document = Document(docName)
     for line in result:
         para = document.add_paragraph(line)
@@ -393,16 +393,14 @@ def FileToDocx(inputFile,outputName):
         for page in range(1,maxPages,10) : 
             images_from_path = convert_from_path(inputFile, dpi=200, first_page=page, last_page = min(page+10-1,maxPages))
             for image in images_from_path:
-                image.save('temp.jpg',)
-                img = cv2.imread("temp.jpg")
-                # #printImageimg)
-                handleFileToDocx(inputFile,outputName)
+                image.save('temp.jpg')
+                handleFileToDocx("temp.jpg",outputName)
     elif str(inputFile).lower().endswith(('.png', '.jpg', '.jpeg')):
         handleFileToDocx(inputFile,outputName)
 
 
 if __name__=='__main__':
     # inputFile,outputName= getInput()
-    inputFile = "./image/2.jpg"
+    inputFile = "./image/1611703.PDF"
     outputName = "newdoc.docx"
     FileToDocx(inputFile,outputName)
