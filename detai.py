@@ -36,7 +36,7 @@ class detectTable(object):
         resized = cv2.resize(gray_img, dim, interpolation = cv2.INTER_AREA)
 
         thresh_img = cv2.adaptiveThreshold(~resized,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,15,-2)
-        cv2.imwrite('thresh_img.jpg',thresh_img)
+        # cv2.imwrite('thresh_img.jpg',thresh_img)
         h_img = thresh_img.copy()
         v_img = thresh_img.copy()
         scale = 15
@@ -45,13 +45,13 @@ class detectTable(object):
         h_structure = cv2.getStructuringElement(cv2.MORPH_RECT,(h_size,1)) # 形态学因子
         h_erode_img = cv2.erode(h_img,h_structure,1)
         h_dilate_img = cv2.dilate(h_erode_img,h_structure,1)
-        cv2.imwrite('h_dilate_image.jpg',h_dilate_img)
+        # cv2.imwrite('h_dilate_image.jpg',h_dilate_img)
         v_size = int(v_img.shape[0] / scale)
 
         v_structure = cv2.getStructuringElement(cv2.MORPH_RECT, (1, v_size))  # 形态学因子
         v_erode_img = cv2.erode(v_img, v_structure, 1)
         v_dilate_img = cv2.dilate(v_erode_img, v_structure, 1)
-        cv2.imwrite('v_dilate_img.jpg',v_dilate_img)
+        # cv2.imwrite('v_dilate_img.jpg',v_dilate_img)
         mask_img = h_dilate_img+v_dilate_img
         joints_img = cv2.bitwise_and(h_dilate_img,v_dilate_img)
         # plt.imsave("h_dilate.jpg",h_dilate_img)
@@ -401,6 +401,13 @@ def FileToDocx(inputFile,outputName):
 
 if __name__=='__main__':
     # inputFile,outputName= getInput()
-    inputFile = "./image/1611703.PDF"
-    outputName = "newdoc.docx"
-    FileToDocx(inputFile,outputName)
+    inputPath= "/home/phamvandan/Documents/research/data/nckh"
+    for r, d, f in os.walk(inputPath):
+        for file in f:
+            inputFile = str(r) +"/"+str(file)
+            outputName = str(r)+"/newdoc.docx"
+            FileToDocx(inputFile,outputName)
+    # inputFile = "./image/1611703.PDF"
+    # outputName = "newdoc.docx"
+    # for 
+    # FileToDocx(inputFile,outputName)

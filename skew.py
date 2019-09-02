@@ -7,15 +7,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image as im
 from scipy.ndimage import interpolation as inter
-
 def printImage(image):
     cv2.imshow("my image",image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
 def skewImage1(image):
-	# (h,w,d) = image.shape
-	# print(image.shape)
 	# image = image[:,250:w-100]
 	gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 	# gray = cv2.bitwise_not(image)
@@ -112,3 +109,4 @@ def skewImage(image):
 		image = cv2.imread("skew_corrected.png")
 		skewImage2(image)
 	return cv2.imread("skew_corrected.png")
+	
