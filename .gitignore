@@ -1,0 +1,5 @@
+nckh/
+*.jpg
+.idea/
+*.png
+__pycache__/
