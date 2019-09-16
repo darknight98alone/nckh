@@ -62,22 +62,23 @@ class detectTable(object):
         # cv2.imwrite("joints.jpg",joints_img)
         # plt.imsave("joints.jpg",joints_img)
         boxes = []
-        h_dilate_img_autofill = self.autofillimg_horizon(h_dilate_img, v_dilate_img)
+        # h_dilate_img_autofill = self.autofillimg_horizon(h_dilate_img, v_dilate_img)
         # cv2.imwrite("h_dilate_autofill.jpg",h_dilate_img_autofill)
-        mask_img_temp = h_dilate_img_autofill + v_dilate_img
+        # mask_img_temp = h_dilate_img_autofill + v_dilate_img
         # plt.imsave('mask_h_autofill.jpg',mask_img_temp)
         v_dilate_img_autofill = self.autofillimg_vertical(h_dilate_img, v_dilate_img)
         # cv2.imwrite('v_dilate_autofill.jpg',v_dilate_img_autofill)
-        h_dilate_img_autofill = self.remove_single_horizon(h_dilate_img_autofill, v_dilate_img_autofill)
-        v_dilate_img_autofill = self.autofillimg_vertical_2nd(h_dilate_img_autofill, v_dilate_img_autofill)
-        mask_img_autofill = h_dilate_img_autofill + v_dilate_img_autofill
+        # h_dilate_img_autofill = self.remove_single_horizon(h_dilate_img_autofill, v_dilate_img_autofill)
+        # v_dilate_img_autofill = self.autofillimg_vertical_2nd(h_dilate_img_autofill, v_dilate_img_autofill)
+        # mask_img_autofill = h_dilate_img_autofill + v_dilate_img_autofill
         # plt.imsave("mask_autofill.jpg",mask_img_autofill)
         # cv2.imwrite("mask_autofill.jpg",mask_img_autofill)
         # plt.imsave('joints_img_autofill.jpg',joints_img_autofill)
-        joints_img_autofill = cv2.bitwise_and(h_dilate_img_autofill, v_dilate_img_autofill)
+        # joints_img_autofill = cv2.bitwise_and(h_dilate_img_autofill, v_dilate_img_autofill)
         # plt.imsave('joints_img_autofill.jpg',joints_img_autofill)
         # cv2.imwrite('joints_img_autofill.jpg',joints_img_autofill)
-        return mask_img, joints_img, mask_img_autofill, joints_img_autofill
+        # return mask_img, joints_img, mask_img_autofill, joints_img_autofill
+        return mask_img, joints_img
 
     def autofillimg_horizon(self, _h_dilate_img, _v_dilate_img):
         height, width = _h_dilate_img.shape
@@ -498,7 +499,8 @@ def handleFileToDocx(fileName, outputName):
     """
     img = cv2.imread(fileName)
     img = skew.skewImage(img)
-    mask, joint, mask_img, joint_img = detectTable(img).run()
+    mask, joint = detectTable(img).run()
+    # mask, joint, mask_img, joint_img = detectTable(img).run()
     original_img = img.copy()
     # cv2.imwrite('debug.jpg', img)
     maskName = "mask.jpg"
@@ -561,7 +563,7 @@ if __name__ == '__main__':
         i = 0
         for file in f:
             inputFile = str(r) + "\\" + str(file)
-            outputName = str(r) + r"\\newdoc4.docx"
+            outputName = str(r) + r"\\bo_autofill.docx"
             FileToDocx(inputFile, outputName)
     print("hello end")
     # inputFile = "./image/1611703.PDF"

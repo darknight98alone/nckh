@@ -105,7 +105,7 @@ def skewImage2(image):
 
 def skewImage(image):
 	skewImage1(image)
-	for i in range(4):
+	for i in range(2):
 		image = cv2.imread("skew_corrected.png")
 		skewImage2(image)
 	return cv2.imread("skew_corrected.png")
