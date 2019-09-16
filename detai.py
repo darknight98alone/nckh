@@ -61,12 +61,12 @@ class detectTable(object):
         cv2.imwrite("mask.jpg", mask_img)
         # cv2.imwrite("joints.jpg",joints_img)
         # plt.imsave("joints.jpg",joints_img)
-        boxes = []
+        # boxes = []
         # h_dilate_img_autofill = self.autofillimg_horizon(h_dilate_img, v_dilate_img)
         # cv2.imwrite("h_dilate_autofill.jpg",h_dilate_img_autofill)
         # mask_img_temp = h_dilate_img_autofill + v_dilate_img
         # plt.imsave('mask_h_autofill.jpg',mask_img_temp)
-        v_dilate_img_autofill = self.autofillimg_vertical(h_dilate_img, v_dilate_img)
+        # v_dilate_img_autofill = self.autofillimg_vertical(h_dilate_img, v_dilate_img)
         # cv2.imwrite('v_dilate_autofill.jpg',v_dilate_img_autofill)
         # h_dilate_img_autofill = self.remove_single_horizon(h_dilate_img_autofill, v_dilate_img_autofill)
         # v_dilate_img_autofill = self.autofillimg_vertical_2nd(h_dilate_img_autofill, v_dilate_img_autofill)
