@@ -61,7 +61,7 @@ def getTableCoordinate(image):
                         listPoint.append((x + j, y + j))
                     listResult.append((x, y, w, h))
                     cv2.rectangle(newimage, (x, y), (x + w, y + h), 255, 1)
-                    # printImagenewimage)
+                    # printImage(newimage)
             if w > 10 and h > 10 and w > 0.7 * w1:
                 if (x, y) not in listBigBoxPoint:
                     listBigBox.append((x, y, w, h))
@@ -105,7 +105,7 @@ def compare_table(item1, item2):
         return item1[1] - item2[1]
 
 
-def process_par(image, output, listBigBox, listResult):
+def process_par(image, output, listBigBox):
     if len(listBigBox) > 0:
         listBigBox.sort(key=lambda x: x[1])
     results = []
@@ -137,3 +137,15 @@ def process_par(image, output, listBigBox, listResult):
                 continue
             results.append(output_tesseract)
     return output, results
+
+def retreiveTextFromTable(listResult,image):
+    results = []
+    for cnt in listResult:
+        x, y, w, h = cnt
+        crop = image[y:y + h, x:x + w]
+        output_tesseract = pytesseract.image_to_string(crop,
+                                                lang='vie')
+        if output_tesseract == '':
+                continue
+        results.append(output_tesseract)
+    return results                                        

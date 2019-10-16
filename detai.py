@@ -11,6 +11,7 @@ import os
 import imutils
 import cv2
 from docx import Document
+from PdfToImages import pdfToImage
 
 def writeToTxt(result, docName):
     if os.path.exists(docName) == False:
@@ -59,18 +60,59 @@ def handleFile(fileName,deblur,handleTableBasic,handleTableAdvance):
         mask_img = imutils.resize(mask_img, width=w * 2, height=h * 2)
         listResult, listBigBox = handleTable.getTableCoordinate(mask_img)
         img = cv2.resize(img, (mask_img.shape[1], mask_img.shape[0]))
-        origin = img.copy()
+        # origin = img.copy()
+        resultTable = handleTable.retreiveTextFromTable(listResult,img)
         for pt in listBigBox:
             (x, y, w, h) = pt
             img[y:(y + h - 1), x:(x + w - 1)] = 255
-        out, result = handleTable.process_par(img, origin, listBigBox, listResult) ## CHO NAY KHAI DA SUA VAO
-        cv2.imwrite('debug.jpg', out)
-    string1 = pytesseract.image_to_string(img,lang="vie")
-    print(string1)
-    for rs in result:
-        print(rs)
+        # out, result = handleTable.process_par(img, origin, listBigBox) ## use for layout
+    resultNotTable = pytesseract.image_to_string(img,lang="vie")
+    return resultNotTable,resultTable
+
+def saveResult(folder,resultNotTable,resultTable,choose=True):
+    if choose:
+        f = open(folder+"/text.txt","w+")
+    else:
+        f = open(folder+"/text.txt","a+")
+    f.write(resultNotTable[:])
+    f.close()
+    f = open("./saved/"+uuid+"/text.txt","a+")
+    k = 0
+    for rs in resultTable:
+        if k%4==0:
+            f.write("\n")
+        f.write(rs+" ")
+        k = k +1
+    f.close()
+
+def preprocessFile(fileType,fileName,folder):
+    names = []
+    if fileType == "pdf":
+        pdfToImage(fileName,folder)
+        count = len(os.listdir(folder))
+        for k in range(1,count+1):
+            names.append(str(k)+".jpg")
+    else:
+        names = os.listdir(folder)
+    i = 0
+    for filename in names:
+        filename = os.path.join(folder,filename)
+        if ".jpg" in filename:
+            resultNotTable,resultTable = handleFile(filename,1,1,0)
+            if i==0:
+                saveResult(folder,resultNotTable,resultTable)
+            else:
+                saveResult(folder,resultNotTable,resultTable,False)
+        elif "docx" or "doc" or "txt" in fileName:
+            f = open(fileName,"r")
+            des = open(folder+"/text.txt","w+")
+            des.write(f.read())
+            des.close()
+            f.close()
+        i = i +1
 
 
 if __name__ == '__main__':
-    inputFile = handleTable.getInput()
-    handleFile(inputFile,1,1,0)
+    uuid = "1"
+    folder = "./saved/"+uuid
+    preprocessFile("pdf","./101.pdf","./saved/1/")
