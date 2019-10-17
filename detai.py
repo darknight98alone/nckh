@@ -85,12 +85,14 @@ def saveResult(folder,resultNotTable,resultTable,choose=True):
         k = k +1
     f.close()
 
-def preprocessFile(fileType,fileName,folder):
+def preprocessFile(fileType,folder):
     names = []
     if fileType == "pdf":
-        pdfToImage(fileName,folder)
+        for filename in os.listdir(folder):
+            filename = os.path.join(folder,filename)
+            pdfToImage(filename,folder)
         count = len(os.listdir(folder))
-        for k in range(1,count+1):
+        for k in range(1,count):
             names.append(str(k)+".jpg")
     else:
         names = os.listdir(folder)
@@ -103,16 +105,17 @@ def preprocessFile(fileType,fileName,folder):
                 saveResult(folder,resultNotTable,resultTable)
             else:
                 saveResult(folder,resultNotTable,resultTable,False)
-        elif "docx" or "doc" or "txt" in fileName:
-            f = open(fileName,"r")
+            if fileType == "pdf":
+                os.remove(filename)
+        elif "docx" or "doc" or "txt" in filename:
+            f = open(filename,"r")
             des = open(folder+"/text.txt","w+")
             des.write(f.read())
             des.close()
             f.close()
         i = i +1
 
-
 if __name__ == '__main__':
     uuid = "1"
     folder = "./saved/"+uuid
-    preprocessFile("pdf","./101.pdf","./saved/1/")
+    preprocessFile("","./saved/1/")

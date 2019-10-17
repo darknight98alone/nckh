@@ -2,11 +2,13 @@ import numpy as np
 import cv2
 import argparse
 import sys
-
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image as im
 from scipy.ndimage import interpolation as inter
+import re
+import pytesseract
+
 def printImage(image):
     cv2.imshow("my image",image)
     cv2.waitKey(0)
@@ -47,14 +49,6 @@ def skewImage1(image):
 	M = cv2.getRotationMatrix2D(center, angle, 1.0)
 	rotated = cv2.warpAffine(image, M, (w, h),
 		flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
-
-	# draw the correction angle on the image so we can validate it
-	# cv2.putText(rotated, "Angle: {:.2f} degrees".format(angle),
-	# 	(10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-	
-	# show the output image
-	#print("[INFO] angle: {:.3f}".format(angle))
-	# printImage(rotated)
 	cv2.imwrite("skew_corrected.png",rotated)
 	return rotated
 	
@@ -96,17 +90,50 @@ def skewImage2(image):
 	M = cv2.getRotationMatrix2D(center, best_angle, 1.0)
 	rotated = cv2.warpAffine(image, M, (w, h),
 		flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
-	# printImage(rotated)
-	cv2.imwrite("skew_corrected.png",rotated)
-	# data = inter.rotate(bin_img, best_angle, reshape=False, order=0)
-	# img = im.fromarray((255 * data).astype("uint8")).convert("RGB")
-	# img.save('skew_corrected.png')
-	# img  = cv2.imread("skew_corrected.png")
+	return rotated
+
+def skewImage3(image):
+	newdata=pytesseract.image_to_osd(image)
+	angle =  re.search('(?<=Rotate: )\d+', newdata).group(0)
+	print(newdata)
+	return rotationImage(image,int(angle))
+import imutils
+def rotationImage(img,angle):
+    (h,w) = img.shape[:2]
+    center = (w//2,h//2)
+    scale = 1.0
+    if angle==90 or angle==270:
+        if w>h: 
+            img= cv2.copyMakeBorder(img.copy(),(w-h)//2,(w-h)//2,0,0,cv2.BORDER_CONSTANT,value=[0,0,0])
+            center = (w//2,w//2)
+        elif w<h: 
+            img= cv2.copyMakeBorder(img.copy(),0,0,(h-w)//2,(h-w)//2,cv2.BORDER_CONSTANT,value=[0,0,0])
+            center = (h//2,h//2)
+    M = cv2.getRotationMatrix2D(center, angle, scale)
+    (h,w) = img.shape[:2]
+    temp =  cv2.warpAffine(img, M, (w, h))
+    if angle==90 or angle==270:
+	    temp = cropImage(temp,h,w)
+    return temp
+
+def cropImage(img,h,w):
+    (x1,y1,x2,y2)=  (0,0,0,0)
+    if w>h: # anh nam ngang
+        (x1,y1,x2,y2) = ((w-h)//2,0,(w+h)//2,w)
+    elif w<h: # anh nguoc
+        (x1,y1,x2,y2) = ((h-w)//2,0,(w+h)//2,h)
+    img = img[y1:y2,x1:x2]
+    return img
 
 def skewImage(image):
-	skewImage1(image)
-	for i in range(2):
-		image = cv2.imread("skew_corrected.png")
-		skewImage2(image)
-	return cv2.imread("skew_corrected.png")
-	
+	image = imutils.resize(image,width=800)
+	image = skewImage1(image)
+	printImage(image)
+	# for i in range(2):
+	# 	image = skewImage2(image)
+	# printImage(image)
+	cv2.imwrite("temp.jpg",image)
+	image = cv2.imread("temp.jpg")
+	image = skewImage3(image)
+	printImage(image)
+	return image
