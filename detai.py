@@ -47,25 +47,30 @@ def handleFile(fileName,deblur,handleTableBasic,handleTableAdvance):
     img = cv2.imread(fileName)
     # handle skew
     img = skew.skewImage(img)
+    skew.printImage(img)
     # handle table with not auto fill
     if handleTableBasic or handleTableAdvance:
         if handleTableBasic:
             mask = DetectTable.detectTable(img).run(1)
         else:
             mask = DetectTable.detectTable(img).run(2)
-        maskName = "mask.jpg"
-        mask_img = cv2.imread(maskName)
+        # maskName = "mask.jpg"
+        # mask_img = cv2.imread(maskName)
+        mask_img = mask
+        print(mask.shape)
         ## resize
-        (h, w,_) = mask_img.shape
-        mask_img = imutils.resize(mask_img, width=w * 2, height=h * 2)
         listResult, listBigBox = handleTable.getTableCoordinate(mask_img)
         img = cv2.resize(img, (mask_img.shape[1], mask_img.shape[0]))
         # origin = img.copy()
         resultTable = handleTable.retreiveTextFromTable(listResult,img)
         for pt in listBigBox:
             (x, y, w, h) = pt
+            if w > 0.9*img.shape[1]:
+                continue
+            # cv2.rectangle(img,(x,y),(x+w,y+h),(0,0,0),2)
             img[y:(y + h - 1), x:(x + w - 1)] = 255
         # out, result = handleTable.process_par(img, origin, listBigBox) ## use for layout
+    # skew.printImage(img)
     resultNotTable = pytesseract.image_to_string(img,lang="vie")
     return resultNotTable,resultTable
 

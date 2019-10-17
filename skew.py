@@ -95,8 +95,10 @@ def skewImage2(image):
 def skewImage3(image):
 	newdata=pytesseract.image_to_osd(image)
 	angle =  re.search('(?<=Rotate: )\d+', newdata).group(0)
-	print(newdata)
-	return rotationImage(image,int(angle))
+	angle = int(angle)
+	if angle==0:
+		return image,angle
+	return rotationImage(image,angle),angle
 import imutils
 def rotationImage(img,angle):
     (h,w) = img.shape[:2]
@@ -105,13 +107,11 @@ def rotationImage(img,angle):
     if angle==90 or angle==270:
         if w>h: 
             img= cv2.copyMakeBorder(img.copy(),(w-h)//2,(w-h)//2,0,0,cv2.BORDER_CONSTANT,value=[0,0,0])
-            center = (w//2,w//2)
         elif w<h: 
             img= cv2.copyMakeBorder(img.copy(),0,0,(h-w)//2,(h-w)//2,cv2.BORDER_CONSTANT,value=[0,0,0])
-            center = (h//2,h//2)
+        center = (img.shape[1]//2,img.shape[1]//2)
     M = cv2.getRotationMatrix2D(center, angle, scale)
-    (h,w) = img.shape[:2]
-    temp =  cv2.warpAffine(img, M, (w, h))
+    temp =  cv2.warpAffine(img, M, (img.shape[1], img.shape[0]),flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
     if angle==90 or angle==270:
 	    temp = cropImage(temp,h,w)
     return temp
@@ -126,14 +126,11 @@ def cropImage(img,h,w):
     return img
 
 def skewImage(image):
-	image = imutils.resize(image,width=800)
+	if image.shape[1] < 900:
+		image = imutils.resize(image,width=900)
+	image,_ = skewImage3(image)
 	image = skewImage1(image)
-	printImage(image)
-	# for i in range(2):
-	# 	image = skewImage2(image)
-	# printImage(image)
-	cv2.imwrite("temp.jpg",image)
-	image = cv2.imread("temp.jpg")
-	image = skewImage3(image)
-	printImage(image)
+	image = skewImage2(image)
+	image = skewImage1(image)
+	image,_ = skewImage3(image)
 	return image

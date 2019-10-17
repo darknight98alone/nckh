@@ -35,7 +35,7 @@ def getTableCoordinate(image):
     listResult: x, y coordinates of layout 's bounding box
     listBigBox: x, y coordinates of table in image
     """
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    # image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     kernel = np.ones((3, 3), np.uint8)
     image = cv2.dilate(image, kernel, iterations=1)
     (h1, w1) = image.shape
