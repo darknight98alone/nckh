@@ -335,10 +335,15 @@ def process_par(image, output, listBigBox, listResult):
     if len(contours) > 0:
         sorted_contours = sorted(contours,
                                  key=lambda ctr: cv2.boundingRect(ctr)[0] + cv2.boundingRect(ctr)[1] * image.shape[1])
+        for i, cnt in enumerate(sorted_contours):
+            x, y, w, h = cv2.boundingRect(cnt)
+            cv2.rectangle(output, (x, y), (x + w, y + h), (0, 255, 0), 1)
+        cv2.imwrite("rs.jpg",output)
         k = 1
         for i, cnt in enumerate(sorted_contours):
             x, y, w, h = cv2.boundingRect(cnt)
             cv2.rectangle(output, (x, y), (x + w, y + h), (0, 255, 0), 1)
+            # printImage(output)
             crop = output[y:y + h, x:x + w]
             if len(listBigBox) > k-1:
                 if y > listBigBox[0][1]:
@@ -484,11 +489,10 @@ def recover_docx(bounding_boxs, output_name, image):
             document.add_picture('cropped_table.jpg',
                                  width=Inches(6.0),
                                  height=Inches(row[0][3]/img_height*5))
-
             i += 1
 
     document.save(outputName)
-
+import matplotlib.pyplot as plt
 def handleFileToDocx(fileName, outputName):
     """
     :param fileName: name of image to be converted
@@ -508,12 +512,14 @@ def handleFileToDocx(fileName, outputName):
     (h, w, d) = mask_img.shape
     mask_img = imutils.resize(mask_img, width=w * 2, height=h * 2)
     # #printImagemask_img)
+    # printImage(mask_img)
     listResult, listBigBox = getTableCoordinate(mask_img)
     img = cv2.resize(img, (mask_img.shape[1], mask_img.shape[0]))
     origin = img.copy()
     for pt in listBigBox:
         (x, y, w, h) = pt
         img[y:(y + h - 1), x:(x + w - 1)] = 255
+    # plt.image = img
     out, result = process_par(img, origin, listBigBox, listResult)
     cv2.imwrite('debug.jpg', out)
     # stringResult = [ res[0] for res in result ]
@@ -546,7 +552,7 @@ def FileToDocx(inputFile, outputName):
     if inputFile.lower().endswith(".pdf"):
         pdf = PdfFileReader(open(inputFile, 'rb'))
         maxPages = pdf.getNumPages()
-        for page in range(1, maxPages, 10):
+        for page in range(1, maxPages+1, 10):
             images_from_path = convert_from_path(inputFile, dpi=200, first_page=page,
                                                  last_page=min(page + 10 - 1, maxPages))
             for image in images_from_path:
@@ -558,14 +564,14 @@ def FileToDocx(inputFile, outputName):
 
 if __name__ == '__main__':
     # inputFile,outputName= getInput()
-    inputPath = r"nckh\\14"
-    for r, d, f in os.walk(inputPath):
-        i = 0
-        for file in f:
-            inputFile = str(r) + "\\" + str(file)
-            outputName = str(r) + r"\\bo_autofill.docx"
-            FileToDocx(inputFile, outputName)
-    print("hello end")
+    # inputPath = r"nckh\\14"
+    # for r, d, f in os.walk(inputPath):
+    #     i = 0
+    #     for file in f:
+    #         inputFile = str(r) + "\\" + str(file)
+    #         outputName = str(r) + r"\\bo_autofill.docx"
+    # print("hello end")
+    FileToDocx("7.pdf", "./test.docx")
     # inputFile = "./image/1611703.PDF"
     # outputName = "newdoc.docx"
     # for
